@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Rotating Truck Wheels with Rotating Light and Imported Model</title>
+    <style>
+        body { margin: 0; }
+    </style>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r127/build/three.module.js';
+        import { GLTFLoader } from 'https://threejsfundamentals.org/threejs/resources/threejs/r127/examples/jsm/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'https://threejsfundamentals.org/threejs/resources/threejs/r127/examples/jsm/controls/OrbitControls.js';
+
+        // Set up scene
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xadd8e6); // Set the background color to light blue
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Load truck model
+        const loader = new GLTFLoader();
+        let truck;
+
+        loader.load('scene.gltf', (gltf) => {
+            truck = gltf.scene;
+
+            // Adjust the initial position of the truck
+            truck.position.y = -1; // You can change this value based on your preference
+
+            // Increase the size of the truck
+            truck.scale.set(1.5, 1.5, 1.5); // Adjust the scale factors as needed
+
+            scene.add(truck);
+        });
+
+        // Set up camera position
+        camera.position.z = 20;
+
+        // Light
+        const light = new THREE.SpotLight(0xffffff, 5, 50, Math.PI / 4); // Increased intensity to 5
+        light.position.set(0, 10, 0); // Initial position of the spotlight
+        scene.add(light);
+
+        // Orbit controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0); // Set the orbit target to the center (or the position of your truck)
+
+        // Add a road or surface (plane geometry)
+        const roadGeometry = new THREE.PlaneGeometry(50, 50); // Adjust the size as needed
+
+        // Load road texture
+        const textureLoader = new THREE.TextureLoader();
+        const roadTexture = textureLoader.load('road.jpg'); // Replace with the actual path to your texture
+
+        const roadMaterial = new THREE.MeshBasicMaterial({ map: roadTexture, side: THREE.DoubleSide });
+        const road = new THREE.Mesh(roadGeometry, roadMaterial);
+        road.rotation.x = -Math.PI / 2; // Rotate the road to be horizontal
+
+        // Manually set the Y-axis position of the road
+        road.position.y = -1.1; // Adjust this value based on your preference
+
+        scene.add(road);
+
+        // Road boundaries
+        const roadWidth = 50;
+        const roadHalfWidth = roadWidth / 2;
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
+
+            camera.aspect = newWidth / newHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(newWidth, newHeight);
+        });
+
+        // Movement speed
+        const rotationSpeed = 0.01;
+        const movementSpeed = 0.1;
+
+        // Initial position of the truck
+        let initialTruckPosition;
+
+        // Keyboard input handling
+        const keyState = {};
+
+        window.addEventListener('keydown', (event) => {
+            keyState[event.key] = true;
+        });
+
+        window.addEventListener('keyup', (event) => {
+            keyState[event.key] = false;
+
+            // Reset the truck position to the initial position on releasing left or right arrow key
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                if (truck) {
+                    truck.position.copy(initialTruckPosition);
+                }
+            }
+        });
+
+        // Animation loop
+        const animate = () => {
+            requestAnimationFrame(animate);
+
+            // Rotate the truck based on arrow key input
+            if (truck) {
+                if (keyState['ArrowUp']) {
+                    truck.rotation.y -= rotationSpeed;
+                }
+                if (keyState['ArrowDown']) {
+                    truck.rotation.y += rotationSpeed;
+                }
+                if (keyState['ArrowRight']) {
+                    // Move the truck along its local X-axis, adjusted for camera orientation
+                    const moveVector = new THREE.Vector3(movementSpeed, 0, 0);
+                    const adjustedMoveVector = moveVector.applyQuaternion(camera.quaternion);
+                    const newPosition = truck.position.clone().add(adjustedMoveVector);
+
+                    // Check if the new position is within the road boundaries
+                    if (Math.abs(newPosition.x) < roadHalfWidth) {
+                        truck.position.copy(newPosition);
+                    }
+                }
+                if (keyState['ArrowLeft']) {
+                    // Move the truck along its local X-axis, adjusted for camera orientation
+                    const moveVector = new THREE.Vector3(-movementSpeed, 0, 0);
+                    const adjustedMoveVector = moveVector.applyQuaternion(camera.quaternion);
+                    const newPosition = truck.position.clone().add(adjustedMoveVector);
+
+                    // Check if the new position is within the road boundaries
+                    if (Math.abs(newPosition.x) < roadHalfWidth) {
+                        truck.position.copy(newPosition);
+                    }
+                }
+            }
+
+            // Rotate the light around the truck
+            const radius = 5;
+            const angle = Date.now() * 0.001; // Adjust the rotation speed
+            light.position.x = Math.cos(angle) * radius;
+            light.position.z = Math.sin(angle) * radius;
+
+            // Update controls
+            controls.update();
+
+            // Update the initial truck position if not set
+            if (!initialTruckPosition && truck) {
+                initialTruckPosition = truck.position.clone();
+            }
+
+            renderer.render(scene, camera);
+        };
+
+        animate();
+    </script>
+</body>
+</html>

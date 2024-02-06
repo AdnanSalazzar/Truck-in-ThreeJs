@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Three.js Rotating Truck Wheels with Rotating Light and Imported Model
+    </title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas class="webgl"></canvas>
+    <!-- Include dat.GUI -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    <script type="module">
+      import * as THREE from "https://threejsfundamentals.org/threejs/resources/threejs/r127/build/three.module.js";
+      import { GLTFLoader } from "https://threejsfundamentals.org/threejs/resources/threejs/r127/examples/jsm/loaders/GLTFLoader.js";
+      import { OrbitControls } from "https://threejsfundamentals.org/threejs/resources/threejs/r127/examples/jsm/controls/OrbitControls.js";
+
+      //Creating a Scene
+      const scene = new THREE.Scene();
+
+      //sizes
+      const sizes = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      };
+
+      //setting up CAMERA
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        sizes.width / sizes.height
+      );
+      camera.position.z = 400;
+      camera.position.y = 400;
+      camera.position.x = 400;
+      scene.add(camera);
+
+
+
+      //render
+      const canvas = document.querySelector(".webgl");
+      const renderer = new THREE.WebGLRenderer({ canvas });
+      renderer.setSize(sizes.width, sizes.height);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.render(scene, camera);
+
+      //Controls
+      const controls = new OrbitControls(camera, canvas);
+      controls.enableDamping = true;
+      controls.enablePan = false;
+      controls.autoRotate = false;
+
+      // Load heightmap texture
+      const textureLoader = new THREE.TextureLoader();
+      const displacementMap = textureLoader.load("heightmap.jpg");
+      const displacementScale = 500;
+
+      // Terrain material with heightmap
+      const terrainMaterial = new THREE.MeshPhongMaterial({
+        color: 0xffffff, // Adjust color as needed
+        displacementMap: displacementMap,
+        displacementScale: displacementScale,
+      });
+
+      // Terrain geometry
+      const terrainGeometry = new THREE.PlaneGeometry(1000, 1000, 100, 100); // Adjust size and segments as needed
+
+      // Terrain mesh
+      const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
+      terrain.rotation.x = -Math.PI / 2;
+      terrain.position.y = -20; // Adjust Y position as needed
+      terrain.receiveShadow = true;
+      scene.add(terrain);
+
+
+        // Hemisphere light for ambient illumination
+        const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x000000, 1);
+      scene.add(hemisphereLight);
+
+      // Directional light to simulate sunlight
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+      directionalLight.position.set(200, 400, 200);
+      directionalLight.castShadow = true;
+      scene.add(directionalLight);
+
+      // Load road texture
+      const roadTexture = textureLoader.load("textures/nightynighty.webp"); // Replace with your texture path
+
+      // Road material
+      const roadMaterial = new THREE.MeshBasicMaterial({ map: roadTexture });
+
+      // Road geometry
+      const roadGeometry = new THREE.PlaneGeometry(1000, 1000); // Adjust size as needed
+
+      // Road mesh
+      const road = new THREE.Mesh(roadGeometry, roadMaterial);
+      road.rotation.x = -0.5 * Math.PI;
+      road.position.y = -20; // Align with terrain
+      scene.add(road);
+
+      // Load truck model
+      const loader = new GLTFLoader();
+      loader.load("scene.gltf", (gltf) => {
+        const truck = gltf.scene;
+        truck.position.set(0, -19.435, -400);
+        truck.castShadow = true;
+        truck.scale.set(15, 15, 15); // Adjust scale as needed
+        scene.add(truck);
+
+        // Animation loop
+        const animate = () => {
+          requestAnimationFrame(animate);
+
+          // Perform any animations or updates here
+
+          // Render the scene
+          renderer.render(scene, camera);
+        };
+
+        // Start the animation loop
+        animate();
+      });
+
+      // Resize event listener
+      window.addEventListener("resize", () => {
+        // Update sizes
+        sizes.width = window.innerWidth;
+        sizes.height = window.innerHeight;
+
+        // Update camera
+        camera.aspect = sizes.width / sizes.height;
+        camera.updateProjectionMatrix();
+
+        // Update renderer
+        renderer.setSize(sizes.width, sizes.height);
+      });
+    </script>
+  </body>
+</html>
