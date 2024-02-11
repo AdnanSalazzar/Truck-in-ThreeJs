@@ -4,8 +4,8 @@ open the FinalOutput.html in a live server
 
 ### Controls
 
-'up arrow' --> truck moves fast 
-'down arrow '--> truck moves slower 
-'o'--> lamp light on and off 
-'w a s d' --> changes camera 
-'mouse control' --> changes camera 
+'up arrow' --> truck moves fast </br>
+'down arrow '--> truck moves slower </br>
+'o'--> lamp light on and off </br>
+'w a s d' --> changes camera </br>
+'mouse control' --> changes camera </br>
