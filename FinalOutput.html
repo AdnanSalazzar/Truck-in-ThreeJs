@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Three.js Rotating Truck Wheels with Rotating Light and Imported Model
+    </title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas class="webgl"></canvas>
+    <!-- Include dat.GUI -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    <script type="module">
+      import * as THREE from "https://threejsfundamentals.org/threejs/resources/threejs/r127/build/three.module.js";
+      import { GLTFLoader } from "https://threejsfundamentals.org/threejs/resources/threejs/r127/examples/jsm/loaders/GLTFLoader.js";
+      import { OrbitControls } from "https://threejsfundamentals.org/threejs/resources/threejs/r127/examples/jsm/controls/OrbitControls.js";
+
+      //Creating a Scene
+      const scene = new THREE.Scene();
+
+      // Add a road or surface (plane geometry)
+      const roadGeometry = new THREE.PlaneGeometry(1000, 1000); // Adjust the size as needed
+
+      // Load road texture
+      const textureLoader = new THREE.TextureLoader();
+      const roadTexture = textureLoader.load("textures/nightynighty.webp"); // Replace with the actual path to your texture
+
+      const roadMaterial = new THREE.MeshBasicMaterial({
+        map: roadTexture,
+        roughness: 1, // Adjust the roughness value based on your preference
+        metalness: 0.2, // Adjust the metalness value based on your preference
+      });
+
+      const road = new THREE.Mesh(roadGeometry, roadMaterial);
+      road.rotation.x = -0.5 * Math.PI;
+      road.position.x = 0.5;
+      road.position.y = -2.04;
+      // Manually set the Y-axis position of the road
+      road.position.y = -20; // Adjust this value based on your preference
+      road.castShadow = true;
+      scene.add(road);
+
+      // Add THE ROAD WHERE IT WILL FOLLOW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      const roadGeometry2 = new THREE.PlaneGeometry(100, 1000); // Adjust the size as needed
+
+      const textureLoader2 = new THREE.TextureLoader();
+      const roadTexture2 = textureLoader.load("textures/Road_new.jpg");
+      const roadMaterial2 = new THREE.MeshBasicMaterial({
+        map: roadTexture2,
+        roughness: 0, // Adjust the roughness value based on your preference
+        metalness: 0, // Adjust the metalness value based on your preference
+      });
+
+      const road2 = new THREE.Mesh(roadGeometry2, roadMaterial2);
+      road2.rotation.x = -0.5 * Math.PI;
+      road2.position.x = 0.5;
+      road2.position.y = -2.04;
+
+      // Manually set the Y-axis position of the road
+      road2.position.y = -19.5; // Adjust this value based on your preference
+      road2.receiveShadow = true;
+      scene.add(road2);
+
+      ///Background Pic
+      const nightTexture = textureLoader.load("textures/night_image.jpg");
+      scene.background = nightTexture;
+
+      //sizes
+      const sizes = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      };
+
+      ///translation of light
+      const light_x = -65;
+      const light_y = -35;
+      const light_z = 0;
+
+      // moon
+      const moon = new THREE.PointLight(0xffffff, 0.5, 0); // Increased intensity to 5
+      moon.position.set(250, 250, 250); // Initial position of the spotlight x y z
+      moon.castShadow = true;
+      scene.add(moon);
+
+      // Visual representation of the moon (small sphere)
+      const lightHelperGeometrymoon = new THREE.SphereGeometry(10);
+      const lightHelperMaterialmoon = new THREE.MeshBasicMaterial({
+        color: 0xcccccc,
+      }); // Yellow color
+      const lightHelpermoon = new THREE.Mesh(
+        lightHelperGeometrymoon,
+        lightHelperMaterialmoon
+      );
+      lightHelpermoon.position.copy(moon.position);
+      scene.add(lightHelpermoon);
+
+      // Define custom vertex and fragment shaders
+const vertexShader = `
+varying vec3 vNormal;
+
+void main() {
+  vNormal = normal;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const fragmentShader = `
+varying vec3 vNormal;
+uniform float time;
+
+void main() {
+  // Calculate color based on time
+  vec3 color = vec3(
+    abs(sin(time * 0.5)),
+    abs(cos(time * 0.7)),
+    abs(sin(time * 0.9))
+  );
+
+  // Output the color
+  gl_FragColor = vec4(color, 1.0);
+}
+`;
+
+// Create a custom material with the custom shaders
+const customMaterial = new THREE.ShaderMaterial({
+vertexShader: vertexShader,
+fragmentShader: fragmentShader,
+uniforms: {
+  time: { value: 0 } // Initial time value
+}
+});
+
+// Apply the custom material to the lightHelpermoon object
+//lightHelpermoon.material = customMaterial;
+
+// Function to update time uniform
+function updateTime() {
+customMaterial.uniforms.time.value += 0.01; // Adjust the increment value as needed
+requestAnimationFrame(updateTime);
+}
+
+// Start updating time
+updateTime();
+
+
+      // Light
+      const light = new THREE.PointLight(0xffffff, 0.5, 0); // Increased intensity to 5
+      light.position.set(100 + light_x, 100 + light_y, -300 + light_z); // Initial position of the spotlight x y z
+      light.castShadow = true;
+      scene.add(light);
+      light.material = customMaterial;
+      // Visual representation of the light (small sphere)
+      const lightHelperGeometry = new THREE.SphereGeometry(2);
+      const lightHelperMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
+      }); // Yellow color
+      const lightHelper = new THREE.Mesh(
+        lightHelperGeometry,
+        lightHelperMaterial
+      );
+      lightHelper.position.copy(light.position);
+      scene.add(lightHelper);
+      lightHelper.material = customMaterial;
+
+      // Light2
+      const light1 = new THREE.PointLight(0xffffff, 0.5, 0); // Increased intensity to 5
+      light1.position.set(-100 - light_x, 100 + light_y, 0); // Initial position of the spotlight x y z
+      light1.castShadow = true;
+      scene.add(light1);
+      light1.material = customMaterial;
+      // Visual representation of the light (small sphere)
+      const lightHelperGeometry1 = new THREE.SphereGeometry(2);
+      const lightHelperMaterial1 = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
+      }); // Yellow color
+      const lightHelper1 = new THREE.Mesh(
+        lightHelperGeometry1,
+        lightHelperMaterial1
+      );
+      lightHelper1.position.copy(light1.position);
+      scene.add(lightHelper1);
+      
+      lightHelper1.material = customMaterial;
+
+      ///35, 65, 310
+      // Light
+      const light2 = new THREE.PointLight(0xffffff, 0.5, 0); // Increased intensity to 5
+      light2.position.set(100 + light_x, 100 + light_y, 300 + light_z); // Initial position of the spotlight x y z
+      light2.castShadow = true;
+      scene.add(light2);
+      light2.material = customMaterial;
+
+      // Visual representation of the light (small sphere)
+      const lightHelperGeometry2 = new THREE.SphereGeometry(2);
+      const lightHelperMaterial2 = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
+      }); // Yellow color
+      const lightHelper2 = new THREE.Mesh(
+        lightHelperGeometry2,
+        lightHelperMaterial2
+      );
+      lightHelper2.position.copy(light2.position);
+      scene.add(lightHelper2);
+      
+      lightHelper2.material = customMaterial;
+
+      /* 
+      
+      // Light
+      const light2 = new THREE.PointLight(0xffffff, 1, 0); // Increased intensity to 5
+      light2.position.set(100, 100, 100); // Initial position of the spotlight x y z
+      light2.castShadow = true;
+      scene.add(light2); */
+
+      //setting up CAMERA
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        sizes.width / sizes.height
+      );
+      camera.position.z = 400;
+      camera.position.y = 400;
+      camera.position.x = 400;
+      scene.add(camera);
+
+      //render
+      const canvas = document.querySelector(".webgl");
+      const renderer = new THREE.WebGLRenderer({ canvas });
+      renderer.setSize(sizes.width, sizes.height);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.render(scene, camera);
+
+      //Controls
+      const controls = new OrbitControls(camera, canvas);
+      controls.enableDamping = true;
+      controls.enablePan = false;
+      controls.autoRotate = false;
+
+      //Importing Truck
+
+      // Load truck model
+      const loader = new GLTFLoader();
+      let truck;
+
+      loader.load("scene.gltf", (gltf) => {
+        truck = gltf.scene;
+        truck.position.set(0, -19.435, -400);
+        truck.castShadow = true;
+
+        //truck.rotation.set(0.13, 2.58, -0.009); // Adjust the rotation as needed
+
+        // Increase the size of the truck
+        truck.scale.set(15, 15, 15); // Adjust the scale factors as needed
+
+        scene.add(truck);
+        console.log(truck);
+
+        ///
+      });
+
+      // Load truck lamp
+      let lamp1;
+      const GLTFLoader1 = new GLTFLoader();
+
+      GLTFLoader1.load("./streetlights/scene.gltf", (gltf) => {
+        lamp1 = gltf.scene;
+        lamp1.position.set(55, -21, -300);
+        lamp1.castShadow = true;
+
+        lamp1.rotation.set(0, 0.5 * Math.PI, 0); // Adjust the rotation as needed
+
+        // Increase the size of the truck
+        lamp1.scale.set(15, 15, 15); // Adjust the scale factors as needed
+
+        scene.add(lamp1);
+        console.log(lamp1);
+
+        // Check if lamp1 is successfully loaded
+        if (lamp1) {
+          console.log("Lamp loaded successfully!");
+          // Additional code to execute if the lamp is loaded successfully
+        } else {
+          console.log("Error loading lamp!");
+          // Additional code to handle the case where the lamp couldn't be loaded
+        }
+        ///
+      });
+
+      // Load truck lamp
+      let lamp2;
+
+      GLTFLoader1.load("./streetlights/scene.gltf", (gltf) => {
+        lamp2 = gltf.scene;
+        lamp2.position.set(55, -21, 300);
+        lamp2.castShadow = true;
+
+        lamp2.rotation.set(0, 0.5 * Math.PI, 0); // Adjust the rotation as needed
+
+        // Increase the size of the truck
+        lamp2.scale.set(15, 15, 15); // Adjust the scale factors as needed
+
+        scene.add(lamp2);
+        console.log(lamp2);
+
+        // Check if lamp1 is successfully loaded
+        if (lamp2) {
+          console.log("Lamp loaded successfully!");
+          // Additional code to execute if the lamp is loaded successfully
+        } else {
+          console.log("Error loading lamp!");
+          // Additional code to handle the case where the lamp couldn't be loaded
+        }
+        ///
+      });
+
+      let lamp3;
+
+      GLTFLoader1.load("./streetlights/scene.gltf", (gltf) => {
+        lamp3 = gltf.scene;
+        lamp3.position.set(-55, -21, 0);
+        lamp3.castShadow = true;
+
+        lamp3.rotation.set(0, -0.5 * Math.PI, 0); // Adjust the rotation as needed
+
+        // Increase the size of the truck
+        lamp3.scale.set(15, 15, 15); // Adjust the scale factors as needed
+
+        scene.add(lamp3);
+        console.log(lamp3);
+
+        // Check if lamp1 is successfully loaded
+        if (lamp2) {
+          console.log("Lamp loaded successfully!");
+          // Additional code to execute if the lamp is loaded successfully
+        } else {
+          console.log("Error loading lamp!");
+          // Additional code to handle the case where the lamp couldn't be loaded
+        }
+        ///
+      });
+
+      //Resize Screen nigga
+      window.addEventListener("resize", () => {
+        //Update the freaking Size
+        sizes.width = window.innerWidth;
+        sizes.height = window.innerHeight;
+
+        //update camera and dont forget render
+
+        camera.aspect = sizes.width / sizes.height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(sizes.width, sizes.height);
+      });
+
+      // Create axes helper
+      const axesHelper = new THREE.AxesHelper(20); // Adjust the size as needed
+
+      // Add axes helper to the scene
+      scene.add(axesHelper);
+
+      document.addEventListener("keydown", (event) => {
+        // Check if the pressed key is "o"
+        if (event.key === "o") {
+          // Toggle the visibility of the light
+          light.visible = !light.visible;
+          light1.visible = !light1.visible;
+          light2.visible = !light2.visible;
+        }
+      });
+
+      let speed = 1; // Initial speed of the truck
+
+      document.addEventListener("keyup", (event) => {
+        // Increase or decrease the speed based on the pressed key
+        if (event.key === "ArrowUp") {
+          // Increase speed
+          speed += 1;
+        } else if (event.key === "ArrowDown") {
+          // Decrease speed, but ensure it doesn't go below zero
+          //speed = Math.max(speed - 1, 0);
+          speed += -1;
+        }
+      });
+
+      // Define the initial radius
+      let radius = 250; // Example initial radius, adjust as needed
+
+      // Add event listener for left mouse click
+      let angle = 50;
+      /* // Add event listener for left and right mouse clicks
+      document.addEventListener("keyup", (event) => {
+        if (event.key ==="ArrowUp") {
+          // Check if left mouse button is clicked
+          // Increase the angle
+          angle += 10; // Adjust the increment value as needed
+        } else if (event.button === 2) {
+          // Check if right mouse button is clicked
+          // Decrease the angle
+          angle -= 10; // Adjust the decrement value as needed
+        }
+      }); */
+
+      // Add event listener for left and right mouse clicks
+      document.addEventListener("click", (event) => {
+        if (event.button === 0) {
+          // Check if left mouse button is clicked
+          // Increase the angle
+          angle += 0.1; // Adjust the increment value as needed
+        } else if (event.button === 1) {
+          // Check if right mouse button is clicked
+          // Decrease the angle
+          angle -= 0.1; // Adjust the decrement value as needed
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        // Define the speed of camera movement
+        const cameraSpeed = 10;
+      
+        // Check which key is pressed
+        switch (event.key) {
+          case "a":
+            // Move the camera left
+            camera.position.x -= cameraSpeed;
+            break;
+          case "d":
+            // Move the camera right
+            camera.position.x += cameraSpeed;
+            break;
+          case "w":
+            // Move the camera forward
+            camera.position.z -= cameraSpeed;
+            break;
+          case "s":
+            // Move the camera backward
+            camera.position.z += cameraSpeed;
+            break;
+        }
+      });
+      
+
+      const loop = () => {
+        //bringing the smoothing effect
+        controls.update();
+
+        //even after the resize the canvas whole shit is reloaded
+        renderer.render(scene, camera);
+        window.requestAnimationFrame(loop);
+        scene.add(axesHelper);
+
+        //road.position.x += 0.1;
+      };
+      loop();
+
+      // Define the center point of rotation
+      const rotationCenter = new THREE.Vector3(0, 0, 0); // Global origin (0, 0, 0) in this case
+
+      const animate = () => {
+        requestAnimationFrame(animate);
+
+        // Perform any animations or updates here
+
+        // Move the truck along the z-axis with the current speed
+        truck.position.z += speed;
+
+        // Ensure the truck loops back when reaching the end of the road
+        if (truck.position.z >= 500) {
+          truck.position.z = -399;
+        }
+        if (truck.position.z <= -434) {
+          truck.position.z = 500;
+        }
+       
+        console.log(truck.position.z);
+
+        // Update wheel rotation based on speed
+        const wheelRotationSpeed = 0.05 * speed;
+        truck.getObjectByName("wheel_70").rotation.x += wheelRotationSpeed;
+        truck.getObjectByName("wheel001_74").rotation.x += wheelRotationSpeed;
+        truck.getObjectByName("wheel002_78").rotation.x += wheelRotationSpeed;
+        truck.getObjectByName("wheel003_82").rotation.x += wheelRotationSpeed;
+
+        // Calculate the position of the moon relative to the rotation center
+        const radius = 250; // Example radius, adjust as needed
+        //angle = angle + 0.01; // Example angle of rotation, adjust as needed
+        //console.log(rotationCenter.x + radius * Math.cos(angle));
+        console.log(angle);
+
+        const newPosition = new THREE.Vector3(
+          rotationCenter.x + radius * Math.cos(angle),
+          rotationCenter.y + radius * Math.sin(angle), // Adjust the y-coordinate
+          rotationCenter.z
+        );
+
+        // Set the position of the moon
+        moon.position.copy(newPosition);
+        lightHelpermoon.position.copy(newPosition);
+
+        // Render the scene
+        renderer.render(scene, camera);
+      };
+
+      // Start the animation loop
+      animate();
+    </script>
+  </body>
+</html>
